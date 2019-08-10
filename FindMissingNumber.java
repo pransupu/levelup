@@ -1,7 +1,7 @@
-public class Test {
+public class FindMissingNumber {
     public static void main(String[] args) {
         System.out.println("Starting...");
-        int[] nums = new int[]{1, 2, 3, 5};
+        int[] nums = new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12};
         int actualSum = 0;
         int n = nums.length + 1;
         int expectedSum = (n*(n+1))/2;
