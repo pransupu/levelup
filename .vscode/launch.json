@@ -2,6 +2,12 @@
     "configurations": [
         {
             "type": "java",
+            "name": "CodeLens (Launch) - Fibonacci",
+            "request": "launch",
+            "mainClass": "Fibonacci"
+        },
+        {
+            "type": "java",
             "name": "CodeLens (Launch) - Palindrome",
             "request": "launch",
             "mainClass": "Palindrome"
