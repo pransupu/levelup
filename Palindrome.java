@@ -17,6 +17,7 @@ public class Palindrome
 
     public static void main(String[] args) {
         String str = "abcdcba";
-        System.out.println("String "+str+" is"+(method2(str) ? "" : " not")+" a palindrome");
+        System.out.println("METHOD-1: String "+str+" is"+(method1(str) ? "" : " not")+" a palindrome");
+        System.out.println("METHOD-2: String "+str+" is"+(method2(str) ? "" : " not")+" a palindrome");
     }
 }
