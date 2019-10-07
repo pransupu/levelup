@@ -1,0 +1,119 @@
+<html>
+<script>
+    /*const data = [
+        [9, 10, 5, 2, 3],
+        [8,  7, 6, 5, 4],
+        [7,  3, 1, 6, 5],
+        [1,  1, 1, 7, 6]
+    ];*/
+    const data = [
+        [9, 10, 5, 2],
+        [8,  7, 6, 5],
+        [7,  3, 1, 6],
+        [1,  1, 1, 7]
+    ];
+    const lens = [];
+
+    function renderMatrix() {
+        const table = document.getElementById("data");
+        for (let i=0; i<data.length; i++) {
+            const tr = document.createElement("tr");
+            for (let j=0; j<data[i].length; j++) {
+                const td = document.createElement("td");
+                td.innerText = data[i][j];
+                tr.appendChild(td);
+            }
+            table.appendChild(tr);
+        }
+    }
+
+    const drawQueue = [];
+    function init() {
+        renderMatrix();
+        const max = snake(data, (e)=>{drawQueue.push(e);});
+        log("max: "+max);
+        renderPaths();
+    }
+    function renderPaths() {
+        if (drawQueue.length === 0) {
+            return;
+        }
+        const e = drawQueue.splice(0, 1)[0];
+        const table = document.getElementById("data")
+        const cell = table.rows[e.r].cells[e.c];
+        cell.setAttribute("data-snake", "true");
+        const adiv = document.createElement("div");
+        adiv.className = "arrow";
+
+        log(JSON.stringify(e));
+
+        if (e.direction === "r") {
+            //adiv.innerText = "▶︎";
+            adiv.innerText = "➡︎";
+            adiv.style.left = (cell.offsetLeft + cell.offsetWidth - 5) + "px";
+            adiv.style.top = (cell.offsetTop + cell.offsetHeight/2 - 10) + "px";
+            table.rows[e.r].cells[e.c+1].setAttribute("data-snake", "true");
+        } else {
+            //adiv.innerText = "▼";
+            adiv.innerText = "⬇︎";
+            adiv.style.left = (cell.offsetLeft + cell.offsetWidth/2 - 5) + "px";
+            adiv.style.top = (cell.offsetTop + cell.offsetHeight - 10) + "px";
+            table.rows[e.r+1].cells[e.c].setAttribute("data-snake", "true");
+        }
+        table.appendChild(adiv);
+        setTimeout(renderPaths, 2000);
+    }
+    function snake(d, event, r, c, l, lmax) {
+        let max = 0;
+        r = r || 0; c = c || 0; l = l || 0; lmax = lmax || {len:0};
+
+        if ((c+1 < d[r].length) && Math.abs(d[r][c+1] - d[r][c]) === 1) {
+            lmax.len = l+1>lmax.len?l+1:lmax.len;
+            //log(l+"/"+lmax.len+") "+d[r][c]+" > "+d[r][c+1]);
+            event && event({type:"grow", r, c, direction:"r"});
+            snake(d, event, r, c+1, l+1, lmax);
+        }
+        if ((r+1 < d.length) && Math.abs(d[r+1][c] - d[r][c]) === 1) {
+            lmax.len = l+1>lmax.len?l+1:lmax.len;
+            //log(l+"/"+lmax.len+") "+d[r][c]+" v "+d[r+1][c]);
+            event && event({type:"grow", r, c, direction:"d"});
+            snake(d, event, r+1, c, l+1, lmax);
+        }
+        if (l === 0) {
+            if (c+1 < d[r].length) {
+                c++;
+                //log("=== new-s ("+r+","+c+") ===");
+                snake(d, event, r, c, 0, lmax);
+            } else if (r+1 < d.length) {
+                r++;
+                c = 0;
+                //log("=== new-s ("+r+","+c+") ===");
+                snake(d, event, r, c, 0, lmax);
+            }
+        }
+        return lmax.len;
+    }
+    function log(msg) {
+        const now = new Date();
+        const line = document.createElement("span");
+        line.innerText = "["+now.toLocaleDateString()+" "+now.toLocaleTimeString()+"] "+msg+"\n";
+        document.getElementById("log").appendChild(line);
+    }
+</script>
+<style>
+    body {margin: auto; display: flex; flex-direction: column;}
+    #log {border: #888 1px solid; font-family: monospace; font-size: 10pt;}
+    table#data {font-family: Verdana; margin: 20px; position: relative;}
+    table#data tr {height: 50px;}
+    table#data td {width: 50px; background-color: #eee; text-align: center; transition: background-color 1s ease;}
+    table#data td[data-snake="true"] {background-color: #56c056;}
+    .arrow {position:absolute; font-size:14pt; color:#060;}
+</style>
+<body onload="init()">
+    <div style="display:flex;justify-content: center;">
+        <table id="data"></table>
+    </div>
+    <div id="log">
+    </div>
+</body>
+</html>

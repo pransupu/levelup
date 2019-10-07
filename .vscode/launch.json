@@ -2,6 +2,12 @@
     "configurations": [
         {
             "type": "java",
+            "name": "CodeLens (Launch) - Sorter",
+            "request": "launch",
+            "mainClass": "Sorter"
+        },
+        {
+            "type": "java",
             "name": "CodeLens (Launch) - BTree",
             "request": "launch",
             "mainClass": "BTree"
