@@ -3,18 +3,18 @@
     <meta charset="utf-8" />
 </head>
 <script>
-    /*const data = [
-        [9, 10, 5, 2, 3],
+    const data = [
+        [7, 10, 5, 2, 3],
         [8,  7, 6, 5, 4],
         [7,  3, 1, 6, 5],
         [1,  1, 1, 7, 6]
-    ];*/
-    const data = [
+    ];
+    /*const data = [
         [9, 10, 5, 2],
         [8,  7, 6, 5],
         [7,  6, 1, 6],
         [1,  5, 6, 7]
-    ];
+    ];*/
     const lens = [];
 
     function renderMatrix() {
@@ -49,43 +49,63 @@
             (longest.trail.trail[i] === "r") ? dc++ : dr++;
         }
     }
-    function renderPaths(finish) {
+    function renderPaths(finish, prevCursor) {
         if (drawQueue.length === 0) {
+            prevCursor && prevCursor.setAttribute("data-snake-cursor", "false");
+            prevCursor.setAttribute("data-snake", "true");
             setTimeout(finish);
             return;
         }
         const e = drawQueue.splice(0, 1)[0];
         const table = document.getElementById("data")
         const cell = table.rows[e.r].cells[e.c];
-        cell.setAttribute("data-snake", "true");
         const adiv = document.createElement("div");
         adiv.className = "arrow";
 
-        log(JSON.stringify(e));
+        //log(JSON.stringify(e));
+
+        let speed = 2;
 
         switch (e.type) {
             case "grow":
+                let cursorCell = null;
                 if (e.direction === "r") {
                     adiv.innerText = "→";
                     adiv.style.left = (cell.offsetLeft + cell.offsetWidth - 10) + "px";
                     adiv.style.top = (cell.offsetTop + cell.offsetHeight/2 - 20) + "px";
-                    table.rows[e.r].cells[e.c+1].setAttribute("data-snake", "true");
+                    cursorCell = table.rows[e.r].cells[e.c+1];
                 } else {
                     adiv.innerText = "↓";
                     adiv.style.left = (cell.offsetLeft + cell.offsetWidth/2 - 10) + "px";
                     adiv.style.top = (cell.offsetTop + cell.offsetHeight - 16) + "px";
-                    table.rows[e.r+1].cells[e.c].setAttribute("data-snake", "true");
+                    cursorCell = table.rows[e.r+1].cells[e.c];
                 }
+                cursorCell.setAttribute("data-snake-cursor", "true");
+                prevCursor && prevCursor.setAttribute("data-snake-cursor", "false");
+                prevCursor = cursorCell;
+                cell.setAttribute("data-snake-start", "false");
+                cell.setAttribute("data-snake-cursor", "false");
+                cell.setAttribute("data-snake", "true");
                 table.appendChild(adiv);
+                delay = 500/speed;
+            break;
+            case "new":
+                cell.setAttribute("data-snake-start", "true");
+                delay = 2000/speed;
             break;
         }
-        setTimeout(()=>renderPaths(finish), 500);
+        setTimeout(()=>renderPaths(finish, prevCursor), delay);
     }
+    const meta = [];
     function snake(d, event, r, c, l, lmax, lcur) {
         let max = 0;
         r = r || 0; c = c || 0; l = l || 0; lmax = lmax || {len:0}; lcur = lcur || {};
-        let split = false;
+        if (l === 0 && done(r, c)) {
+            return;
+        }
+        done(r, c, true);
         if ((c+1 < d[r].length) && Math.abs(d[r][c+1] - d[r][c]) === 1) {
+            log("Checking "+r+","+(c+1)+": done="+done(r,c+1));
             if (event) {
                 if (l === 0) {
                     //log("=== new-r ===");
@@ -93,17 +113,18 @@
                     lcur = {r, c, trail:[]};
                 }
                 lcur.trail.push("r");
+                event({type:"grow", r, c, direction:"r", lmax});
             }
             if (l+1 > lmax.len) {
                 lmax.len = l+1;
                 lmax.trail = {r:lcur.r, c:lcur.c, trail:[...lcur.trail]};
             }
             //log(l+"/"+JSON.stringify(lmax)+") "+d[r][c]+" > "+d[r][c+1]);
-            event && event({type:"grow", r, c, direction:"r", lmax});
             snake(d, event, r, c+1, l+1, lmax, lcur);
             event && (lcur.trail.pop());
         }
         if ((r+1 < d.length) && Math.abs(d[r+1][c] - d[r][c]) === 1) {
+            log("Checking "+(r+1)+","+c+": done="+done(r+1,c));
             if (event) {
                 if (l === 0) {
                     //log("=== new-d ===");
@@ -111,13 +132,13 @@
                     lcur = {r, c, trail:[]};
                 }
                 lcur.trail.push("d");
+                event({type:"grow", r, c, direction:"d", lmax});
             }
             if (l+1 > lmax.len) {
                 lmax.len = l+1;
                 lmax.trail = {r:lcur.r, c:lcur.c, trail:[...lcur.trail]};
             }
             //log(l+"/"+JSON.stringify(lmax)+") "+d[r][c]+" v "+d[r+1][c]);
-            event && event({type:"grow", r, c, direction:"d", lmax});
             snake(d, event, r+1, c, l+1, lmax, lcur);
             event && (lcur.trail.pop());
         }
@@ -133,25 +154,39 @@
         }
         return lmax;
     }
+    function done(r, c, flag) {
+        const metaIndex = Math.floor((r*data[0].length + c)/32);
+        const bitpos = (r*data[0].length + c) % 32;
+        const mask = 1 << bitpos;
+        if (flag === undefined) {
+            return !!(meta[metaIndex] & mask);
+        }
+        meta[metaIndex] = flag ? meta[metaIndex] | mask : meta[metaIndex] & ~mask;
+        return !!flag;
+    }
     function log(msg) {
         const now = new Date();
         const line = document.createElement("span");
         line.innerText = "["+now.toLocaleDateString()+" "+now.toLocaleTimeString()+"] "+msg+"\n";
-        document.getElementById("log").appendChild(line);
+        const logdiv = document.getElementById("log");
+        logdiv.appendChild(line);
+        logdiv.scrollTop = logdiv.scrollHeight;
     }
 </script>
 <style>
     body {margin: auto; display: flex; flex-direction: column; width:100vw; height: 100vh;}
     #log {border: #888 1px solid; font-family: monospace; font-size: 10pt; overflow-y: scroll; margin: 2px; flex-grow: 1;}
-    table#data {font-family: Verdana; margin: 20px; position: relative;}
+    table#data {font-family: Verdana; margin: 20px; margin-left: 50px; position: relative;}
     table#data tr {height: 50px;}
     table#data td {width: 50px; background-color: #eee; text-align: center; transition: background-color 1s ease;}
     table#data td[data-snake="true"] {background-color: #56c056;}
+    table#data td[data-snake-start="true"] {background-color: #ef4df5;}
+    table#data td[data-snake-cursor="true"] {background-color: #4d58f5;}
     table#data td[data-snake-longest="true"] {background-color: #d0d324;}
     .arrow {position:absolute; font-size:24pt; color:#060;}
 </style>
 <body onload="init()">
-    <div style="display:flex;justify-content: center;">
+    <div style="display:flex;">
         <table id="data"></table>
     </div>
     <div id="log">
