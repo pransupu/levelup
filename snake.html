@@ -3,22 +3,26 @@
     <meta charset="utf-8" />
 </head>
 <script>
-    const data = [
+    const DATA_DEFAULT = [
         [7, 10, 5, 2, 3],
         [8,  7, 6, 5, 4],
         [7,  3, 1, 6, 5],
         [1,  1, 1, 7, 6]
     ];
-    /*const data = [
+    /*const DATA_DEFAULT = [
         [9, 10, 5, 2],
         [8,  7, 6, 5],
         [7,  6, 1, 6],
         [1,  5, 6, 7]
     ];*/
-    const lens = [];
+    let data = JSON.parse(JSON.stringify(DATA_DEFAULT));
+    const drawQueue = [];
+    const meta = [];
+    let speed = 1;
 
     function renderMatrix() {
         const table = document.getElementById("data");
+        table.innerHTML = "";
         for (let i=0; i<data.length; i++) {
             const tr = document.createElement("tr");
             for (let j=0; j<data[i].length; j++) {
@@ -30,14 +34,44 @@
         }
     }
 
-    const drawQueue = [];
     function init() {
         renderMatrix();
+        buttonState(true, true, true);
+    }
+    function go() {
+        buttonState(false, true, false);
         const max = snake(data, (e)=>{drawQueue.push(e);});
         log("max: "+JSON.stringify(max));
         renderPaths(()=>{
             max && renderLongestPath(max);
+            buttonState(true, true, true);
         });
+    }
+    function resetGrid() {
+        data = JSON.parse(JSON.stringify(DATA_DEFAULT));;
+        drawQueue.length = 0;
+        meta.length = 0;
+        renderMatrix();
+        buttonState(true, true, true);
+    }
+    function buttonState(gen, reset, go) {
+        document.getElementById("gen").disabled = gen ? null : "true";
+        document.getElementById("reset").disabled = reset ? null : "true";
+        document.getElementById("go").disabled = go ? null : "true";
+    }
+    function generateGrid() {
+        const r = parseInt(document.getElementById("rows").value);
+        const c = parseInt(document.getElementById("cols").value);
+        data = [];
+        drawQueue.length = 0;
+        meta.length = 0;
+        for (let i=0; i<r; i++) {
+            if (!data[i]) data[i] = [];
+            for (let j=0; j<c; j++) {
+                data[i][j] = Math.floor(Math.random()*10)%5;
+            }
+        }
+        renderMatrix();
     }
     function renderLongestPath(longest) {
         const table = document.getElementById("data")
@@ -52,7 +86,7 @@
     function renderPaths(finish, prevCursor) {
         if (drawQueue.length === 0) {
             prevCursor && prevCursor.setAttribute("data-snake-cursor", "false");
-            prevCursor.setAttribute("data-snake", "true");
+            prevCursor && prevCursor.setAttribute("data-snake", "true");
             setTimeout(finish);
             return;
         }
@@ -63,8 +97,6 @@
         adiv.className = "arrow";
 
         //log(JSON.stringify(e));
-
-        let speed = 2;
 
         switch (e.type) {
             case "grow":
@@ -82,6 +114,7 @@
                 }
                 cursorCell.setAttribute("data-snake-cursor", "true");
                 prevCursor && prevCursor.setAttribute("data-snake-cursor", "false");
+                prevCursor && prevCursor.setAttribute("data-snake", "true");
                 prevCursor = cursorCell;
                 cell.setAttribute("data-snake-start", "false");
                 cell.setAttribute("data-snake-cursor", "false");
@@ -91,12 +124,13 @@
             break;
             case "new":
                 cell.setAttribute("data-snake-start", "true");
-                delay = 2000/speed;
+                prevCursor && prevCursor.setAttribute("data-snake-cursor", "false");
+                prevCursor && prevCursor.setAttribute("data-snake", "true");
+                delay = 1000/speed;
             break;
         }
         setTimeout(()=>renderPaths(finish, prevCursor), delay);
     }
-    const meta = [];
     function snake(d, event, r, c, l, lmax, lcur) {
         let max = 0;
         r = r || 0; c = c || 0; l = l || 0; lmax = lmax || {len:0}; lcur = lcur || {};
@@ -174,11 +208,18 @@
     }
 </script>
 <style>
-    body {margin: auto; display: flex; flex-direction: column; width:100vw; height: 100vh;}
+    body {margin: auto; display: flex; flex-direction: column; width:100vw; height: 100vh; font-family: Verdana; font-size: 10pt;}
     #log {border: #888 1px solid; font-family: monospace; font-size: 10pt; overflow-y: scroll; margin: 2px; flex-grow: 1;}
-    table#data {font-family: Verdana; margin: 20px; margin-left: 50px; position: relative;}
+    #mainPanel {display: flex; flex-direction: row; background-color: #f8f8f8;}
+    #controls {display: flex; flex-direction: column; justify-content: center;}
+    input {font-size: 10pt;}
+    button {font-size: 10pt; border-radius: 3px; background-color: #eee;}
+    button#gen {padding: 10px; padding-left: 30px; padding-right: 30px; }
+    button#reset {padding: 6px; padding-left: 30px; padding-right: 30px; }
+    button#go {padding: 20px; padding-left: 30px; padding-right: 30px; font-weight: bold;}
+    table#data {margin: 20px; margin-left: 50px; position: relative;}
     table#data tr {height: 50px;}
-    table#data td {width: 50px; background-color: #eee; text-align: center; transition: background-color 1s ease;}
+    table#data td {width: 50px; background-color: #ddd; text-align: center; transition: background-color 1s ease;}
     table#data td[data-snake="true"] {background-color: #56c056;}
     table#data td[data-snake-start="true"] {background-color: #ef4df5;}
     table#data td[data-snake-cursor="true"] {background-color: #4d58f5;}
@@ -186,9 +227,21 @@
     .arrow {position:absolute; font-size:24pt; color:#060;}
 </style>
 <body onload="init()">
-    <div style="display:flex;">
+    <div id="mainPanel">
         <table id="data"></table>
+        <div style="width: 2px; background-color: #8888; margin:30px;"></div>
+        <div id="controls">
+            <div style="text-align: right;">Rows: <input type="text" id="rows" value="5" size="3"/></div>
+            <div style="text-align: right;">Columns: <input type="text" id="cols" value="5" size="3" /></div>
+            <br />
+            <button id="gen" onclick="generateGrid()">Generate Grid</button>
+            <br />
+            <button id="reset" onclick="resetGrid()">Reset Grid</button>
+            <br />
+            <button id="go" onclick="go()">GO</button>
+        </div>
     </div>
+    <div style="text-align: right; background-color: #f8f8f8;"><button onclick="document.getElementById('log').innerHTML=''" style="font-size: 8pt;">Clear Log</button></div>
     <div id="log">
     </div>
 </body>
