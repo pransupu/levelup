@@ -41,8 +41,8 @@
     function go() {
         buttonState(false, true, false);
         const max = snake(data, (e)=>{drawQueue.push(e);});
-        log("max: "+JSON.stringify(max));
         renderPaths(()=>{
+            log("Max snake length: "+max.len+", Tail at ("+max.trail.r+", "+max.trail.c+")");
             max && renderLongestPath(max);
             buttonState(true, true, true);
         });
@@ -96,17 +96,17 @@
         const adiv = document.createElement("div");
         adiv.className = "arrow";
 
-        //log(JSON.stringify(e));
-
         switch (e.type) {
             case "grow":
                 let cursorCell = null;
                 if (e.direction === "r") {
+                    log("("+e.r+", "+e.c+") → ("+e.r+", "+(e.c+1)+")");
                     adiv.innerText = "→";
                     adiv.style.left = (cell.offsetLeft + cell.offsetWidth - 10) + "px";
                     adiv.style.top = (cell.offsetTop + cell.offsetHeight/2 - 20) + "px";
                     cursorCell = table.rows[e.r].cells[e.c+1];
                 } else {
+                    log("("+e.r+", "+e.c+") ↓ ("+(e.r+1)+", "+e.c+")");
                     adiv.innerText = "↓";
                     adiv.style.left = (cell.offsetLeft + cell.offsetWidth/2 - 10) + "px";
                     adiv.style.top = (cell.offsetTop + cell.offsetHeight - 16) + "px";
@@ -123,6 +123,7 @@
                 delay = 500/speed;
             break;
             case "new":
+                log("Starting new path at ("+e.r+", "+e.c+")");
                 cell.setAttribute("data-snake-start", "true");
                 prevCursor && prevCursor.setAttribute("data-snake-cursor", "false");
                 prevCursor && prevCursor.setAttribute("data-snake", "true");
@@ -134,47 +135,40 @@
     function snake(d, event, r, c, l, lmax, lcur) {
         let max = 0;
         r = r || 0; c = c || 0; l = l || 0; lmax = lmax || {len:0}; lcur = lcur || {};
-        if (l === 0 && done(r, c)) {
-            return;
-        }
-        done(r, c, true);
-        if ((c+1 < d[r].length) && Math.abs(d[r][c+1] - d[r][c]) === 1) {
-            log("Checking "+r+","+(c+1)+": done="+done(r,c+1));
-            if (event) {
-                if (l === 0) {
-                    //log("=== new-r ===");
-                    event({type:"new", r, c, lmax});
-                    lcur = {r, c, trail:[]};
+        if (l !== 0 || !done(r, c)) {
+            done(r, c, true);
+            if ((c+1 < d[r].length) && Math.abs(d[r][c+1] - d[r][c]) === 1) {
+                if (event) {
+                    if (l === 0) {
+                        event({type:"new", r, c, lmax});
+                        lcur = {r, c, trail:[]};
+                    }
+                    lcur.trail.push("r");
+                    event({type:"grow", r, c, direction:"r", lmax});
                 }
-                lcur.trail.push("r");
-                event({type:"grow", r, c, direction:"r", lmax});
-            }
-            if (l+1 > lmax.len) {
-                lmax.len = l+1;
-                lmax.trail = {r:lcur.r, c:lcur.c, trail:[...lcur.trail]};
-            }
-            //log(l+"/"+JSON.stringify(lmax)+") "+d[r][c]+" > "+d[r][c+1]);
-            snake(d, event, r, c+1, l+1, lmax, lcur);
-            event && (lcur.trail.pop());
-        }
-        if ((r+1 < d.length) && Math.abs(d[r+1][c] - d[r][c]) === 1) {
-            log("Checking "+(r+1)+","+c+": done="+done(r+1,c));
-            if (event) {
-                if (l === 0) {
-                    //log("=== new-d ===");
-                    event({type:"new", r, c, lmax});
-                    lcur = {r, c, trail:[]};
+                if (l+1 > lmax.len) {
+                    lmax.len = l+1;
+                    lmax.trail = {r:lcur.r, c:lcur.c, trail:[...lcur.trail]};
                 }
-                lcur.trail.push("d");
-                event({type:"grow", r, c, direction:"d", lmax});
+                snake(d, event, r, c+1, l+1, lmax, lcur);
+                event && (lcur.trail.pop());
             }
-            if (l+1 > lmax.len) {
-                lmax.len = l+1;
-                lmax.trail = {r:lcur.r, c:lcur.c, trail:[...lcur.trail]};
+            if ((r+1 < d.length) && Math.abs(d[r+1][c] - d[r][c]) === 1) {
+                if (event) {
+                    if (l === 0) {
+                        event({type:"new", r, c, lmax});
+                        lcur = {r, c, trail:[]};
+                    }
+                    lcur.trail.push("d");
+                    event({type:"grow", r, c, direction:"d", lmax});
+                }
+                if (l+1 > lmax.len) {
+                    lmax.len = l+1;
+                    lmax.trail = {r:lcur.r, c:lcur.c, trail:[...lcur.trail]};
+                }
+                snake(d, event, r+1, c, l+1, lmax, lcur);
+                event && (lcur.trail.pop());
             }
-            //log(l+"/"+JSON.stringify(lmax)+") "+d[r][c]+" v "+d[r+1][c]);
-            snake(d, event, r+1, c, l+1, lmax, lcur);
-            event && (lcur.trail.pop());
         }
         if (l === 0) {
             if (c+1 < d[r].length) {
@@ -220,10 +214,10 @@
     table#data {margin: 20px; margin-left: 50px; position: relative;}
     table#data tr {height: 50px;}
     table#data td {width: 50px; background-color: #ddd; text-align: center; transition: background-color 1s ease;}
-    table#data td[data-snake="true"] {background-color: #56c056;}
+    table#data td[data-snake="true"] {background-color: #d0d324;}
     table#data td[data-snake-start="true"] {background-color: #ef4df5;}
     table#data td[data-snake-cursor="true"] {background-color: #4d58f5;}
-    table#data td[data-snake-longest="true"] {background-color: #d0d324;}
+    table#data td[data-snake-longest="true"] {background-color: #56c056;}
     .arrow {position:absolute; font-size:24pt; color:#060;}
 </style>
 <body onload="init()">
@@ -241,7 +235,7 @@
             <button id="go" onclick="go()">GO</button>
         </div>
     </div>
-    <div style="text-align: right; background-color: #f8f8f8;"><button onclick="document.getElementById('log').innerHTML=''" style="font-size: 8pt;">Clear Log</button></div>
+    <div style="text-align: right; background-color: #f8f8f8;"><button onclick="document.getElementById('log').innerHTML=''" style="font-size: 8pt;margin-right:5px;">Clear Log</button></div>
     <div id="log">
     </div>
 </body>
