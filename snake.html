@@ -42,7 +42,9 @@
         buttonState(false, true, false);
         const max = snake(data, (e)=>{drawQueue.push(e);});
         renderPaths(()=>{
-            log("Max snake length: "+max.len+", Tail at ("+max.trail.r+", "+max.trail.c+")");
+            const maxlen = max.len + 1;
+            log("Max snake length: "+maxlen+", Tail at ("+max.trail.r+", "+max.trail.c+")");
+            document.getElementById("result").innerHTML = "Max snake length: "+maxlen;
             max && renderLongestPath(max);
             buttonState(true, true, true);
         });
@@ -53,6 +55,7 @@
         meta.length = 0;
         renderMatrix();
         buttonState(true, true, true);
+        document.getElementById("result").innerHTML = "";
     }
     function buttonState(gen, reset, go) {
         document.getElementById("gen").disabled = gen ? null : "true";
@@ -60,6 +63,7 @@
         document.getElementById("go").disabled = go ? null : "true";
     }
     function generateGrid() {
+        document.getElementById("result").innerHTML = "";
         const r = parseInt(document.getElementById("rows").value);
         const c = parseInt(document.getElementById("cols").value);
         data = [];
@@ -95,6 +99,7 @@
         const cell = table.rows[e.r].cells[e.c];
         const adiv = document.createElement("div");
         adiv.className = "arrow";
+        speed = parseInt(document.getElementById("speed").value);
 
         switch (e.type) {
             case "grow":
@@ -130,7 +135,7 @@
                 delay = 1000/speed;
             break;
         }
-        setTimeout(()=>renderPaths(finish, prevCursor), delay);
+        setTimeout(()=>renderPaths(finish, prevCursor), delay > 0 ? delay : 0);
     }
     function snake(d, event, r, c, l, lmax, lcur) {
         let max = 0;
@@ -205,12 +210,14 @@
     body {margin: auto; display: flex; flex-direction: column; width:100vw; height: 100vh; font-family: Verdana; font-size: 10pt;}
     #log {border: #888 1px solid; font-family: monospace; font-size: 10pt; overflow-y: scroll; margin: 2px; flex-grow: 1;}
     #mainPanel {display: flex; flex-direction: row; background-color: #f8f8f8;}
-    #controls {display: flex; flex-direction: column; justify-content: center;}
+    #controls {display: flex; flex-direction: column; justify-content: top; margin-top: 20px;}
+    #result {font-size: 14pt; color: #3f8f3f; font-weight: bold;}
     input {font-size: 10pt;}
+    select {font-size: 9pt;}
     button {font-size: 10pt; border-radius: 3px; background-color: #eee;}
     button#gen {padding: 10px; padding-left: 30px; padding-right: 30px; }
     button#reset {padding: 6px; padding-left: 30px; padding-right: 30px; }
-    button#go {padding: 20px; padding-left: 30px; padding-right: 30px; font-weight: bold;}
+    button#go {padding: 20px; padding-left: 30px; padding-right: 30px; font-weight: bold; margin-top:3px;}
     table#data {margin: 20px; margin-left: 50px; position: relative;}
     table#data tr {height: 50px;}
     table#data td {width: 50px; background-color: #ddd; text-align: center; transition: background-color 1s ease;}
@@ -225,14 +232,27 @@
         <table id="data"></table>
         <div style="width: 2px; background-color: #8888; margin:30px;"></div>
         <div id="controls">
-            <div style="text-align: right;">Rows: <input type="text" id="rows" value="5" size="3"/></div>
-            <div style="text-align: right;">Columns: <input type="text" id="cols" value="5" size="3" /></div>
+            <div style="text-align: right;">
+                Rows: <input type="text" id="rows" value="5" size="3"/>
+                Columns: <input type="text" id="cols" value="5" size="3" />
+            </div>
             <br />
             <button id="gen" onclick="generateGrid()">Generate Grid</button>
             <br />
             <button id="reset" onclick="resetGrid()">Reset Grid</button>
             <br />
+            <br />
+            <div>Animation Speed: 
+                <select id="speed">
+                    <option value="3">Fast</option>
+                    <option value="2" selected>Medium</option>
+                    <option value="1">Slow</option>
+                    <option value="-1">None</option>
+                </select>
+            </div>
             <button id="go" onclick="go()">GO</button>
+            <br />
+            <div id="result"></div>
         </div>
     </div>
     <div style="text-align: right; background-color: #f8f8f8;"><button onclick="document.getElementById('log').innerHTML=''" style="font-size: 8pt;margin-right:5px;">Clear Log</button></div>
